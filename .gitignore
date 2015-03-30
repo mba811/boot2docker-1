@@ -1,0 +1,8 @@
+/.docker/
+/.vagrant/
+/packer_cache/
+/*.box
+/*.iso
+/.env
+Vagrantfile
+

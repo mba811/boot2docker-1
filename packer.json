@@ -1,0 +1,26 @@
+{
+    "builders": [{
+        "name": "parallels",
+        "type": "parallels-iso",
+        "iso_url": "boot2docker.iso",
+        "iso_checksum_type": "none",
+        "boot_wait": "5s",
+        "ssh_username": "docker",
+        "ssh_password": "tcuser",
+        "shutdown_command": "sudo poweroff",
+        "guest_os_type": "linux-2.6",
+        "parallels_tools_mode": "disable"
+    }],
+
+    "provisioners": [{
+        "type": "shell",
+        "inline": ["echo 'boot2docker, please format-me' > /dev/sda"]
+    }],
+
+    "post-processors": [{
+        "type": "vagrant",
+        "include": ["boot2docker.iso"],
+        "vagrantfile_template": "vagrantfile.rb",
+        "output": "boot2docker.box"
+    }]
+}
