@@ -11,6 +11,10 @@ end
 require_plugin 'vagrant-parallels'
 require_plugin 'vagrant-triggers'
 
+VAGRANT_CWD = ENV['VAGRANT_CWD'].nil? ? Dir.pwd :
+    File.realpath(ENV['VAGRANT_CWD']);
+VAGRANT_CWD_QUOTED = VAGRANT_CWD.inspect
+
 Vagrant.configure("2") do |config|
     config.ssh.shell = "sh"
     config.ssh.username = "docker"
@@ -56,13 +60,13 @@ Vagrant.configure("2") do |config|
                     sleep 1
                 done
             fi
-            cp -r /home/docker/.docker "#{Dir.pwd}"
+            cp -r /home/docker/.docker #{VAGRANT_CWD_QUOTED}
         EOT
     end
 
     config.trigger.after [:destroy, :suspend, :halt] do
         info "Removing docker TLS certs from host."
-        run "rm -rf .docker"
+        run "rm -rf #{VAGRANT_CWD_QUOTED}/.docker"
     end
 
     config.trigger.after [:up, :resume] do
@@ -76,23 +80,26 @@ Vagrant.configure("2") do |config|
     config.trigger.after [:up, :resume] do
         info "Building .env file."
         system <<-EOT.prepend("\n\n") + "\n"
-            docker_host_ip="$(vagrant ssh-config | sed -n 's/[ ]*HostName[ ]*//gp')"
-            [[ -z "$docker_host_ip" ]] && exit 1
-            echo > .env
-            echo export DOCKER_HOST_IP="$docker_host_ip" >> .env
-            echo export DOCKER_HOST="tcp://${docker_host_ip}:2376" >> .env
-            echo export DOCKER_TLS_VERIFY=1 >> .env
-            echo export DOCKER_CERT_PATH=\\"$PWD/.docker\\" >> .env
+            DHIP="$(vagrant ssh-config | sed -n 's/[ ]*HostName[ ]*//gp')"
+            [[ -z "$DHIP" ]] && exit 1
+            DOTENV=#{VAGRANT_CWD_QUOTED}/.env
+            DOCKER_DIR=#{VAGRANT_CWD_QUOTED}/.docker
+            echo > "$DOTENV"
+            echo export DOCKER_HOST_IP="$DHIP" >> "$DOTENV"
+            echo export DOCKER_HOST="tcp://${DHIP}:2376" >> "$DOTENV"
+            echo export DOCKER_TLS_VERIFY=1 >> "$DOTENV"
+            printf "export DOCKER_CERT_PATH=%q\\n" "$DOCKER_DIR" >> "$DOTENV"
         EOT
     end
 
     config.trigger.after [:up, :resume] do
-        info "Run `source .env` to set docker environment variables."
+        prefix = Dir.pwd.eql?(VAGRANT_CWD) ? "" : "#{VAGRANT_CWD_QUOTED}/"
+        info "Run `source #{prefix}.env` to set docker environment variables."
     end
 
     config.trigger.after [:destroy, :suspend, :halt] do
         info "Removing .env file."
-        run "rm -f .env"
+        run "rm -f #{VAGRANT_CWD_QUOTED}/.env"
     end
 
 end
