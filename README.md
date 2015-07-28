@@ -13,14 +13,16 @@ than VirtualBox shared folders, which are used by the official setup.
 
 ## Requirements
 
-Before starting the setup process, install the following software:
+Before starting the setup process, please install the following software:
 
-  * [Docker](https://docs.docker.com/installation/mac/) v1.6.2+
-  * [Vagrant](https://www.vagrantup.com/) v1.7.2+
-  * [Parallels Desktop](http://www.parallels.com/products/desktop/) v10.1.4+
+  * [Docker](https://docs.docker.com/installation/mac/)
+  * [Vagrant](https://www.vagrantup.com/)
+    * [Vagrant Triggers](https://github.com/emyl/vagrant-triggers/)
+    * [Vagrant Parallels](https://github.com/Parallels/vagrant-parallels)
+  * [Parallels Desktop](http://www.parallels.com/products/desktop/)
 
-The easiest way to install **Docker** and **Vagrant** is via
-[Homebrew](http://brew.sh/):
+The easiest way to install the requirements is via
+[Homebrew](http://brew.sh/) and [Homebrew Cask](http://caskroom.io/):
 
 ```sh
 brew install \
@@ -28,7 +30,16 @@ brew install \
   caskroom/cask/brew-cask
 
 brew cask install \
-  vagrant
+  vagrant \
+  parallels-desktop
+```
+
+Next install the required vagrant plugins:
+
+```sh
+vagrant plugin install \
+  vagrant-triggers \
+  vagrant-parallels
 ```
 
 ## Setup
@@ -37,14 +48,10 @@ Execute the following commands to set up and start the vagrant box and to
 load the docker host environment variables into the current shell session:
 
 ```sh
-vagrant plugin install \
-    vagrant-parallels \
-    vagrant-triggers
-
 vagrant init blueimp/boot2docker
 vagrant up --provider parallels
 
-source .env
+. .env
 ```
 
 Now the docker client is bound to the docker daemon running in the
@@ -61,17 +68,18 @@ with hostname entries for the docker host IP.
 
 To load the docker host environment variables automatically for each terminal
 session and to provide `b2d` as `vagrant` alias with the boot2docker home as
-working directory, execute the following commands:
+working directory, execute the following commands in the directory
+where you initalized the vagrant box:
 
 ```sh
-printf "export B2D_HOME=%q\n" "$PWD" >> ~/.profile
-echo '[[ -e "$B2D_HOME/.env" ]] && source "$B2D_HOME/.env"' >> ~/.profile
+echo "export B2D_HOME='$(pwd | sed "s/'/'\\\''/g")'" >> ~/.profile
+echo '[ -f "$B2D_HOME/.env" ] && . "$B2D_HOME/.env"' >> ~/.profile
 echo 'alias b2d="VAGRANT_CWD=\"\$B2D_HOME\" vagrant"' >> ~/.profile
-source ~/.profile
+. ~/.profile
 ```
 
-Now the docker host machine can be accessed by running `b2d` from any
-directory:
+Now the docker host machine can be managed by running `b2d` from any
+directory, e.g.:
 
 ```sh
 b2d ssh
@@ -79,18 +87,22 @@ b2d ssh
 
 ## Build
 
-If you want to build the vagrant box yourself, install the following
-additional requirements:
+If you want to build the vagrant box yourself, please install the following
+additional software:
 
-  * [Packer](http://www.packer.io) v0.7.5+
+  * [Packer](http://www.packer.io)
   * [Parallels Virtualization SDK](
-    http://www.parallels.com/products/desktop/download/) v10.1.4+
+      http://www.parallels.com/products/desktop/download/)
 
-**Packer** can also be installed via [Homebrew](http://brew.sh/):
+The build requirements can also be installed via
+[Homebrew](http://brew.sh/) and [Homebrew Cask](http://caskroom.io/):
 
 ```sh
 brew install \
   packer
+
+brew cask install \
+  parallels-virtualization-sdk
 ```
 
 Next you can run the following commands, to build the box and add it to the
@@ -104,7 +116,7 @@ make clean
 
 ## License
 
-Released under the [MIT license](http://www.opensource.org/licenses/MIT).
+Released under the [MIT license](http://opensource.org/licenses/MIT).
 
 ## Author
 
